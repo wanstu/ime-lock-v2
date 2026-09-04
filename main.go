@@ -13,8 +13,8 @@ import (
 //go:embed all:frontend/src
 var assets embed.FS
 
-//go:embed build/appicon.png
-var appIcon []byte
+//go:embed assets/icons/tray-icon.png
+var trayIcon []byte
 
 func main() {
 	releaseInstance, primary, err := acquireSingleInstance()
@@ -32,7 +32,7 @@ func main() {
 	_ = prepareSingleInstanceWake()
 
 	app := NewApp()
-	app.attachTray(appIcon)
+	app.attachTray(trayIcon)
 
 	err = wails.Run(&options.App{
 		Title:             "IME Lock v2",
