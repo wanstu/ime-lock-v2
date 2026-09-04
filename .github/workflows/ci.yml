@@ -33,8 +33,8 @@ jobs:
       - name: Upload executable
         uses: actions/upload-artifact@v4
         with:
-          name: img-lock-v2-windows-amd64
-          path: build/bin/img-lock-v2.exe
+          name: ime-lock-v2-windows-amd64
+          path: build/bin/ime-lock-v2.exe
           if-no-files-found: error
 
   release:
@@ -47,11 +47,11 @@ jobs:
       - name: Download executable
         uses: actions/download-artifact@v4
         with:
-          name: img-lock-v2-windows-amd64
+          name: ime-lock-v2-windows-amd64
           path: dist
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/img-lock-v2.exe
+          files: dist/ime-lock-v2.exe
           generate_release_notes: true

@@ -1,4 +1,4 @@
-module github.com/wanstu/img-lock-v2
+module github.com/wanstu/ime-lock-v2
 
 go 1.25.0
 

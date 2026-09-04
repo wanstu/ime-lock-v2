@@ -18,11 +18,16 @@ type ConfigStore struct {
 }
 
 func NewDefaultConfigStore() (*ConfigStore, error) {
-	dir, err := configDir()
+	home, err := os.UserHomeDir()
 	if err != nil {
+		return nil, fmt.Errorf("无法获取用户目录: %w", err)
+	}
+	path := filepath.Join(home, ".config", "ime-lock-v2", "config.json")
+	legacyPath := filepath.Join(home, ".config", "img-lock-v2", "config.json")
+	if err := migrateConfigFile(legacyPath, path); err != nil {
 		return nil, err
 	}
-	return &ConfigStore{path: filepath.Join(dir, "config.json")}, nil
+	return &ConfigStore{path: path}, nil
 }
 
 func configDir() (string, error) {
@@ -30,7 +35,30 @@ func configDir() (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("无法获取用户目录: %w", err)
 	}
-	return filepath.Join(home, ".config", "img-lock-v2"), nil
+	return filepath.Join(home, ".config", "ime-lock-v2"), nil
+}
+
+func migrateConfigFile(legacyPath, newPath string) error {
+	if _, err := os.Stat(newPath); err == nil {
+		return nil
+	} else if !errors.Is(err, os.ErrNotExist) {
+		return fmt.Errorf("检查新配置失败: %w", err)
+	}
+
+	data, err := os.ReadFile(legacyPath)
+	if errors.Is(err, os.ErrNotExist) {
+		return nil
+	}
+	if err != nil {
+		return fmt.Errorf("读取旧配置失败: %w", err)
+	}
+	if err := os.MkdirAll(filepath.Dir(newPath), 0o755); err != nil {
+		return fmt.Errorf("创建新配置目录失败: %w", err)
+	}
+	if err := os.WriteFile(newPath, data, 0o600); err != nil {
+		return fmt.Errorf("迁移旧配置失败: %w", err)
+	}
+	return nil
 }
 
 func (s *ConfigStore) Load() (Config, error) {

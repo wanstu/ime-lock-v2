@@ -12,8 +12,9 @@ import (
 )
 
 const (
-	managerRunKeyPath = `Software\Microsoft\Windows\CurrentVersion\Run`
-	managerRunValue   = "IMG-Lock-V2"
+	managerRunKeyPath     = `Software\Microsoft\Windows\CurrentVersion\Run`
+	managerRunValue       = "IME-Lock-V2"
+	legacyManagerRunValue = "IMG-Lock-V2"
 )
 
 func managerAutoStartEnabled() (bool, error) {
@@ -53,6 +54,9 @@ func setManagerAutoStart(enabled bool) error {
 		if err := key.DeleteValue(managerRunValue); err != nil && !errors.Is(err, registry.ErrNotExist) {
 			return fmt.Errorf("关闭开机启动失败: %w", err)
 		}
+		if err := key.DeleteValue(legacyManagerRunValue); err != nil && !errors.Is(err, registry.ErrNotExist) {
+			return fmt.Errorf("清理旧开机启动项失败: %w", err)
+		}
 		return nil
 	}
 
@@ -67,6 +71,9 @@ func setManagerAutoStart(enabled bool) error {
 	defer key.Close()
 	if err := key.SetStringValue(managerRunValue, command); err != nil {
 		return fmt.Errorf("保存开机启动配置失败: %w", err)
+	}
+	if err := key.DeleteValue(legacyManagerRunValue); err != nil && !errors.Is(err, registry.ErrNotExist) {
+		return fmt.Errorf("清理旧开机启动项失败: %w", err)
 	}
 	return nil
 }

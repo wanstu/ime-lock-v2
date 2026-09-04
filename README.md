@@ -1,8 +1,8 @@
 # IME Lock v2
 
-`img-lock-v2` 是对 `D:\projects\ime-lock` 的一次独立重构版本，工程组织参考 `D:\projects\codexprov4`：使用 Go + Wails 提供桌面 UI，并把单实例、自启动、托盘、配置与核心监听拆成独立模块。
+`ime-lock-v2` 是对 `D:\projects\ime-lock` 的一次独立重构版本，工程组织参考 `D:\projects\codexprov4`：使用 Go + Wails 提供桌面 UI，并把单实例、自启动、托盘、配置与核心监听拆成独立模块。
 
-> 目录名按本次重构要求使用 `img-lock-v2`；应用显示名称仍为 **IME Lock v2**，因为实际功能是输入法（IME）状态守护。
+> 目录名按本次重构要求使用 `ime-lock-v2`；应用显示名称仍为 **IME Lock v2**，因为实际功能是输入法（IME）状态守护。
 
 ## 功能
 
@@ -22,9 +22,9 @@
 v2 拆分为：
 
 ```text
-img-lock-v2/
+ime-lock-v2/
 ├── app.go                         # Wails App / 对前端暴露的 API
-├── config.go                      # ~/.config/img-lock-v2/config.json
+├── config.go                      # ~/.config/ime-lock-v2/config.json
 ├── autostart_windows.go           # Windows Run 注册表
 ├── single_instance_windows.go     # 单实例 + 已有窗口唤醒
 ├── watcher_windows.go             # IME 核心检测与修复
@@ -51,7 +51,7 @@ v2 保留原版已经验证有效的核心检测链路，只把它从 Rust/Win32
 配置文件：
 
 ```text
-%USERPROFILE%\.config\img-lock-v2\config.json
+%USERPROFILE%\.config\ime-lock-v2\config.json
 ```
 
 当前持久化字段：
@@ -69,7 +69,7 @@ v2 保留原版已经验证有效的核心检测链路，只把它从 Rust/Win32
 
 ```text
 HKCU\Software\Microsoft\Windows\CurrentVersion\Run
-IMG-Lock-V2 = "<exe path>" --autostart
+IME-Lock-V2 = "<exe path>" --autostart
 ```
 
 ## 本地构建
@@ -99,12 +99,12 @@ wails build
 构建产物：
 
 ```text
-build\bin\img-lock-v2.exe
+build\bin\ime-lock-v2.exe
 ```
 
 ## 手工验证建议
 
-1. 双击 `img-lock-v2.exe`，确认主面板显示且托盘图标存在。
+1. 双击 `ime-lock-v2.exe`，确认主面板显示且托盘图标存在。
 2. 再双击一次，确认没有第二个进程，并且原窗口被唤起。
 3. 在中文微软拼音下切到英文子模式，确认很快自动恢复中文。
 4. 按 `Ctrl + Shift + F9`，确认自动修复开关状态变化。
@@ -120,4 +120,4 @@ build\bin\img-lock-v2.exe
 - `go test ./...`
 - 安装 Wails CLI
 - `wails build`
-- 上传 `img-lock-v2.exe` 构建产物
+- 上传 `ime-lock-v2.exe` 构建产物

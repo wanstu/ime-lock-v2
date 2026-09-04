@@ -69,6 +69,11 @@ func (a *App) attachTray(icon []byte) {
 func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
 	go watchSingleInstanceWake(ctx, a.showMainWindow)
+	if a.config.AutoStart {
+		if err := setManagerAutoStart(true); err != nil {
+			a.setError(err)
+		}
+	}
 	if a.watcher != nil {
 		if err := a.watcher.Start(); err != nil {
 			a.setError(err)
