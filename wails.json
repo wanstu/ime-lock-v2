@@ -3,6 +3,7 @@
   "name": "IME Lock v2",
   "outputfilename": "ime-lock-v2",
   "wailsjsdir": "./frontend",
+  "frontend:build": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File ../scripts/generate-app-icon.ps1",
   "author": {
     "name": "wanstu"
   }
