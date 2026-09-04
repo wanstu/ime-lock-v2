@@ -1,0 +1,57 @@
+﻿name: CI
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  windows-build:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.25.x'
+          cache: true
+
+      - name: Test
+        run: go test ./...
+
+      - name: Install Wails
+        run: go install github.com/wailsapp/wails/v2/cmd/wails@v2.15.0
+
+      - name: Build
+        run: wails build
+
+      - name: Upload executable
+        uses: actions/upload-artifact@v4
+        with:
+          name: img-lock-v2-windows-amd64
+          path: build/bin/img-lock-v2.exe
+          if-no-files-found: error
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: windows-build
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download executable
+        uses: actions/download-artifact@v4
+        with:
+          name: img-lock-v2-windows-amd64
+          path: dist
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/img-lock-v2.exe
+          generate_release_notes: true

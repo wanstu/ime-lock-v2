@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IME Lock v2</title>
+  <link rel="stylesheet" href="./main.css">
+</head>
+<body>
+  <main class="app-shell">
+    <header class="hero">
+      <div class="brand-mark" aria-hidden="true">中</div>
+      <div>
+        <p class="eyebrow">Windows 输入法守护</p>
+        <h1>IME Lock <span>v2</span></h1>
+        <p class="hero-copy">当中文输入法意外落到英文子模式时，自动恢复中文输入状态。</p>
+      </div>
+      <div id="running-pill" class="status-pill neutral">初始化中</div>
+    </header>
+
+    <section id="message" class="message hidden"></section>
+
+    <section class="stats-grid">
+      <article class="stat-card">
+        <span>自动修复</span>
+        <strong id="auto-fix-status">—</strong>
+      </article>
+      <article class="stat-card">
+        <span>累计恢复</span>
+        <strong id="fix-count">0 次</strong>
+      </article>
+      <article class="stat-card">
+        <span>最近恢复</span>
+        <strong id="last-fix">暂无</strong>
+      </article>
+    </section>
+
+    <section class="panel">
+      <div class="panel-heading">
+        <div>
+          <h2>运行设置</h2>
+          <p>这些设置会立即生效；开机启动与静默启动会持久化。</p>
+        </div>
+      </div>
+
+      <label class="setting-row">
+        <div>
+          <strong>自动修复</strong>
+          <span>检测中文键盘布局下的英文子模式并恢复。</span>
+        </div>
+        <input id="auto-fix" type="checkbox">
+      </label>
+
+      <label class="setting-row">
+        <div>
+          <strong>开机启动</strong>
+          <span>写入当前用户的 Windows Run 注册表项。</span>
+        </div>
+        <input id="auto-start" type="checkbox">
+      </label>
+
+      <label class="setting-row">
+        <div>
+          <strong>静默启动</strong>
+          <span>仅在开机自启时隐藏主窗口；手动双击仍会弹出。</span>
+        </div>
+        <input id="silent-start" type="checkbox">
+      </label>
+
+      <label class="setting-row">
+        <div>
+          <strong>采集日志</strong>
+          <span>仅在需要排查时开启，最多保留最近 600 条。</span>
+        </div>
+        <input id="capture-logs" type="checkbox">
+      </label>
+    </section>
+
+    <section class="panel log-panel">
+      <div class="panel-heading log-heading">
+        <div>
+          <h2>运行日志</h2>
+          <p>快捷键：<kbd id="shortcut">Ctrl + Shift + F9</kbd></p>
+        </div>
+        <button id="clear-logs" class="ghost-button" type="button">清空日志</button>
+      </div>
+      <pre id="log-output" class="log-output">日志采集未开启。</pre>
+    </section>
+
+    <footer class="footer">
+      <span id="config-path">配置路径：—</span>
+      <span>关闭窗口后仍驻留系统托盘</span>
+    </footer>
+  </main>
+  <script src="./main.js"></script>
+</body>
+</html>

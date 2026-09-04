@@ -1,0 +1,9 @@
+{
+  "$schema": "https://wails.io/schemas/config.v2.json",
+  "name": "IME Lock v2",
+  "outputfilename": "img-lock-v2",
+  "wailsjsdir": "./frontend",
+  "author": {
+    "name": "wanstu"
+  }
+}

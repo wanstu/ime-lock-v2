@@ -1,0 +1,7 @@
+/build/bin/
+/build/windows/
+/frontend/dist/
+*.exe
+*.log
+.idea/
+.vscode/
