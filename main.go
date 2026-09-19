@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io/fs"
 	"os"
-	"strings"
 
 	desktopkit "github.com/wanstu/wails-desktop-kit"
 	"github.com/wanstu/wails-desktop-kit/autostart"
@@ -56,16 +55,17 @@ func run() error {
 	window.Background = desktopkit.Color{R: 244, G: 247, B: 251, A: 1}
 
 	return desktopkit.Run(desktopkit.Config{
-		ID:             desktopAppID,
-		Title:          "IME Lock v2",
-		Assets:         kitui.Mount(appAssets),
-		Bind:           []interface{}{app},
-		Launch:         launch,
-		Window:         window,
-		Tray:           imeTrayConfig(app, trayIcon),
-		Theme:          desktopkit.DefaultThemeConfig(),
-		SingleInstance: true,
-		SecondInstance: handleSecondInstance,
+		ID:                             desktopAppID,
+		Title:                          "IME Lock v2",
+		Assets:                         kitui.Mount(appAssets),
+		Bind:                           []interface{}{app},
+		Launch:                         launch,
+		Window:                         window,
+		Tray:                           imeTrayConfig(app, trayIcon),
+		Theme:                          desktopkit.DefaultThemeConfig(),
+		SingleInstance:                 true,
+		SecondInstancePolicy:           desktopkit.SecondInstanceWakeManual,
+		SecondInstanceAutoStartAliases: []string{"--minimized"},
 		Hooks: desktopkit.Hooks{
 			Startup:  app.startup,
 			Shutdown: app.shutdown,
@@ -74,15 +74,5 @@ func run() error {
 }
 
 func launchedFromAutoStart() bool {
-	return hasAutoStartArg(os.Args[1:])
-}
-
-func hasAutoStartArg(args []string) bool {
-	for _, arg := range args {
-		arg = strings.TrimSpace(arg)
-		if strings.EqualFold(arg, "--autostart") || strings.EqualFold(arg, "--minimized") {
-			return true
-		}
-	}
-	return false
+	return desktopkit.HasAutoStartArg(os.Args[1:], "--minimized")
 }

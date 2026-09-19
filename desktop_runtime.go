@@ -1,9 +1,6 @@
 package main
 
-import (
-	"github.com/wailsapp/wails/v2/pkg/options"
-	desktopkit "github.com/wanstu/wails-desktop-kit"
-)
+import desktopkit "github.com/wanstu/wails-desktop-kit"
 
 type appAutoStartProvider struct {
 	app *App
@@ -69,18 +66,4 @@ func stateCheckbox(
 			return err
 		},
 	})
-}
-
-func shouldShowExistingWindow(args []string) bool {
-	return !hasAutoStartArg(args)
-}
-
-func handleSecondInstance(controller *desktopkit.Controller, data options.SecondInstanceData) {
-	// Preserve IME Lock's old distinction:
-	// - a duplicate login/autostart invocation exits silently;
-	// - a manual duplicate launch restores the existing window.
-	if !shouldShowExistingWindow(data.Args) {
-		return
-	}
-	controller.ShowWindow()
 }
