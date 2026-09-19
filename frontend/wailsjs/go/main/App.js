@@ -30,6 +30,10 @@ export function SetSilentStart(arg1) {
   return window['go']['main']['App']['SetSilentStart'](arg1);
 }
 
+export function SetTheme(arg1) {
+  return window['go']['main']['App']['SetTheme'](arg1);
+}
+
 export function SilentStart() {
   return window['go']['main']['App']['SilentStart']();
 }

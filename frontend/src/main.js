@@ -9,6 +9,7 @@ const el = {
   autoFix: document.getElementById("auto-fix"),
   autoStart: document.getElementById("auto-start"),
   silentStart: document.getElementById("silent-start"),
+  theme: document.getElementById("theme"),
   captureLogs: document.getElementById("capture-logs"),
   shortcut: document.getElementById("shortcut"),
   configPath: document.getElementById("config-path"),
@@ -37,12 +38,33 @@ function clearError() {
   el.message.classList.add("hidden");
 }
 
+function normalizeTheme(mode) {
+  return ["light", "dark", "system"].includes(mode) ? mode : "light";
+}
+
+function applyTheme(mode) {
+  const nextMode = normalizeTheme(mode);
+  const theme = window.desktopKitTheme;
+  if (theme?.apply && theme?.getMode) {
+    if (theme.getMode() !== nextMode) {
+      theme.apply(nextMode);
+    }
+    return;
+  }
+
+  const resolved = nextMode === "system"
+    ? (window.matchMedia?.("(prefers-color-scheme: dark)").matches ? "dark" : "light")
+    : nextMode;
+  document.documentElement.setAttribute("data-dk-theme", resolved);
+  document.documentElement.setAttribute("data-dk-theme-mode", nextMode);
+}
+
 function render(next) {
   if (!next) return;
   state.current = next;
 
   el.runningPill.textContent = next.running ? "● 监听中" : "○ 未运行";
-  el.runningPill.className = `status-pill ${next.running ? "running" : "stopped"}`;
+  el.runningPill.className = `status-pill dk-status-pill ${next.running ? "running is-success" : "stopped is-warning"}`;
   el.autoFixStatus.textContent = next.auto_fix ? "已开启" : "已关闭";
   el.fixCount.textContent = `${next.fix_count || 0} 次`;
   el.lastFix.textContent = next.last_fix_at || "暂无";
@@ -51,6 +73,11 @@ function render(next) {
   el.autoStart.checked = Boolean(next.auto_start);
   el.silentStart.checked = Boolean(next.silent_start);
   el.captureLogs.checked = Boolean(next.capture_logs);
+
+  const theme = normalizeTheme(next.theme);
+  el.theme.value = theme;
+  applyTheme(theme);
+
   el.shortcut.textContent = next.shortcut || "Ctrl + Shift + F9";
   el.configPath.textContent = `配置路径：${next.config_path || "—"}`;
   el.configPath.title = next.config_path || "";
@@ -107,6 +134,29 @@ bindToggle(el.autoFix, "SetAutoFix");
 bindToggle(el.autoStart, "SetAutoStart");
 bindToggle(el.silentStart, "SetSilentStart");
 bindToggle(el.captureLogs, "SetCaptureLogs");
+
+el.theme.addEventListener("change", async () => {
+  const app = api();
+  if (!app) return;
+
+  const previous = normalizeTheme(state.current?.theme);
+  const nextMode = normalizeTheme(el.theme.value);
+  el.theme.disabled = true;
+  applyTheme(nextMode);
+
+  try {
+    const next = await app.SetTheme(nextMode);
+    render(next);
+    clearError();
+  } catch (error) {
+    el.theme.value = previous;
+    applyTheme(previous);
+    showError(error);
+  } finally {
+    el.theme.disabled = false;
+    await refresh();
+  }
+});
 
 el.clearLogs.addEventListener("click", async () => {
   const app = api();

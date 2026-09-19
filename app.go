@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/wailsapp/wails/v2/pkg/runtime"
+	"github.com/wanstu/wails-desktop-kit/autostart"
 )
 
 const logCapacity = 600
@@ -18,6 +18,7 @@ type AppState struct {
 	AutoFix     bool   `json:"auto_fix"`
 	AutoStart   bool   `json:"auto_start"`
 	SilentStart bool   `json:"silent_start"`
+	Theme       string `json:"theme"`
 	CaptureLogs bool   `json:"capture_logs"`
 	FixCount    uint64 `json:"fix_count"`
 	LastFixAt   string `json:"last_fix_at"`
@@ -27,13 +28,11 @@ type AppState struct {
 }
 
 type App struct {
-	ctx context.Context
-
-	store   *ConfigStore
-	config  Config
-	watcher *IMEWatcher
-	tray    *TrayManager
-	initErr error
+	store     *ConfigStore
+	config    Config
+	watcher   *IMEWatcher
+	autoStart *autostart.Manager
+	initErr   error
 
 	mu          sync.RWMutex
 	captureLogs bool
@@ -43,9 +42,9 @@ type App struct {
 	lastError   string
 }
 
-func NewApp() *App {
+func NewApp(autoStart *autostart.Manager) *App {
 	store, err := NewDefaultConfigStore()
-	app := &App{store: store, initErr: err}
+	app := &App{store: store, autoStart: autoStart, initErr: err}
 	if err == nil {
 		cfg, loadErr := store.Load()
 		if loadErr != nil {
@@ -60,18 +59,17 @@ func NewApp() *App {
 	return app
 }
 
-func (a *App) attachTray(icon []byte) {
-	if a != nil {
-		a.tray = NewTrayManager(a, icon)
-	}
-}
-
-func (a *App) startup(ctx context.Context) {
-	a.ctx = ctx
-	go watchSingleInstanceWake(ctx, a.showMainWindow)
-	if a.config.AutoStart {
-		if err := setManagerAutoStart(true); err != nil {
-			a.setError(err)
+func (a *App) startup(context.Context) {
+	if a.initErr == nil {
+		a.mu.RLock()
+		autoStart := a.config.AutoStart
+		a.mu.RUnlock()
+		if autoStart && a.autoStart != nil {
+			if err := a.autoStart.SetEnabled(true); err != nil {
+				a.setError(err)
+			} else if err := cleanupLegacyAutoStart(); err != nil {
+				a.setError(err)
+			}
 		}
 	}
 	if a.watcher != nil {
@@ -81,19 +79,9 @@ func (a *App) startup(ctx context.Context) {
 	}
 }
 
-func (a *App) domReady(ctx context.Context) {
-	a.ctx = ctx
-	if a.tray != nil {
-		a.tray.Start()
-	}
-}
-
 func (a *App) shutdown(context.Context) {
 	if a.watcher != nil {
 		a.watcher.Stop()
-	}
-	if a.tray != nil {
-		a.tray.Stop()
 	}
 }
 
@@ -104,6 +92,34 @@ func (a *App) SilentStart() bool {
 	a.mu.RLock()
 	defer a.mu.RUnlock()
 	return a.config.SilentStart
+}
+
+func (a *App) setAutoStart(enabled bool) error {
+	if err := a.ready(); err != nil {
+		return err
+	}
+	if a.autoStart == nil {
+		return errors.New("开机启动管理器未初始化")
+	}
+	if err := a.autoStart.SetEnabled(enabled); err != nil {
+		a.setError(err)
+		return err
+	}
+	if err := cleanupLegacyAutoStart(); err != nil {
+		a.setError(err)
+		return err
+	}
+
+	a.mu.Lock()
+	a.config.AutoStart = enabled
+	cfg := a.config
+	a.mu.Unlock()
+	if err := a.store.Save(cfg); err != nil {
+		a.setError(err)
+		return err
+	}
+	a.appendLog(fmt.Sprintf("开机启动已%s", onOff(enabled)))
+	return nil
 }
 
 func (a *App) GetState() (AppState, error) {
@@ -126,6 +142,7 @@ func (a *App) GetState() (AppState, error) {
 		AutoFix:     a.watcher.Enabled(),
 		AutoStart:   a.config.AutoStart,
 		SilentStart: a.config.SilentStart,
+		Theme:       normalizeTheme(a.config.Theme),
 		CaptureLogs: a.captureLogs,
 		FixCount:    a.fixCount,
 		LastFixAt:   lastFix,
@@ -145,22 +162,9 @@ func (a *App) SetAutoFix(enabled bool) (AppState, error) {
 }
 
 func (a *App) SetAutoStart(enabled bool) (AppState, error) {
-	if err := a.ready(); err != nil {
+	if err := a.setAutoStart(enabled); err != nil {
 		return AppState{}, err
 	}
-	if err := setManagerAutoStart(enabled); err != nil {
-		a.setError(err)
-		return AppState{}, err
-	}
-	a.mu.Lock()
-	a.config.AutoStart = enabled
-	cfg := a.config
-	a.mu.Unlock()
-	if err := a.store.Save(cfg); err != nil {
-		a.setError(err)
-		return AppState{}, err
-	}
-	a.appendLog(fmt.Sprintf("开机启动已%s", onOff(enabled)))
 	return a.GetState()
 }
 
@@ -177,6 +181,26 @@ func (a *App) SetSilentStart(enabled bool) (AppState, error) {
 		return AppState{}, err
 	}
 	a.appendLog(fmt.Sprintf("静默启动已%s", onOff(enabled)))
+	return a.GetState()
+}
+
+func (a *App) SetTheme(theme string) (AppState, error) {
+	if err := a.ready(); err != nil {
+		return AppState{}, err
+	}
+	theme = strings.ToLower(strings.TrimSpace(theme))
+	if !validTheme(theme) {
+		return AppState{}, fmt.Errorf("不支持的主题模式 %q", theme)
+	}
+	a.mu.Lock()
+	a.config.Theme = theme
+	cfg := a.config
+	a.mu.Unlock()
+	if err := a.store.Save(cfg); err != nil {
+		a.setError(err)
+		return AppState{}, err
+	}
+	a.appendLog(fmt.Sprintf("主题已切换为 %s", theme))
 	return a.GetState()
 }
 
@@ -248,21 +272,6 @@ func (a *App) setError(err error) {
 	a.mu.Unlock()
 }
 
-func (a *App) showMainWindow() {
-	if a == nil || a.ctx == nil {
-		return
-	}
-	runtime.WindowUnminimise(a.ctx)
-	runtime.Show(a.ctx)
-}
-
-func (a *App) quitApplication() {
-	if a == nil || a.ctx == nil {
-		return
-	}
-	runtime.Quit(a.ctx)
-}
-
 func (a *App) ready() error {
 	if a == nil {
 		return errors.New("应用未初始化")
@@ -270,7 +279,7 @@ func (a *App) ready() error {
 	if a.initErr != nil {
 		return a.initErr
 	}
-	if a.store == nil || a.watcher == nil {
+	if a.store == nil || a.watcher == nil || a.autoStart == nil {
 		return errors.New("核心服务未初始化")
 	}
 	return nil

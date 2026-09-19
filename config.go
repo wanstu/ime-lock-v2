@@ -6,15 +6,49 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
+)
+
+const (
+	themeLight  = "light"
+	themeDark   = "dark"
+	themeSystem = "system"
 )
 
 type Config struct {
-	AutoStart   bool `json:"auto_start"`
-	SilentStart bool `json:"silent_start"`
+	AutoStart   bool   `json:"auto_start"`
+	SilentStart bool   `json:"silent_start"`
+	Theme       string `json:"theme"`
 }
 
 type ConfigStore struct {
 	path string
+}
+
+func defaultConfig() Config {
+	return Config{Theme: themeLight}
+}
+
+func normalizeTheme(theme string) string {
+	switch strings.ToLower(strings.TrimSpace(theme)) {
+	case themeDark:
+		return themeDark
+	case themeSystem:
+		return themeSystem
+	case themeLight, "":
+		return themeLight
+	default:
+		return themeLight
+	}
+}
+
+func validTheme(theme string) bool {
+	switch theme {
+	case themeLight, themeDark, themeSystem:
+		return true
+	default:
+		return false
+	}
 }
 
 func NewDefaultConfigStore() (*ConfigStore, error) {
@@ -67,15 +101,16 @@ func (s *ConfigStore) Load() (Config, error) {
 	}
 	data, err := os.ReadFile(s.path)
 	if errors.Is(err, os.ErrNotExist) {
-		return Config{}, nil
+		return defaultConfig(), nil
 	}
 	if err != nil {
 		return Config{}, fmt.Errorf("读取配置失败: %w", err)
 	}
-	var cfg Config
+	cfg := defaultConfig()
 	if err := json.Unmarshal(data, &cfg); err != nil {
 		return Config{}, fmt.Errorf("解析配置失败: %w", err)
 	}
+	cfg.Theme = normalizeTheme(cfg.Theme)
 	return cfg, nil
 }
 
@@ -83,6 +118,7 @@ func (s *ConfigStore) Save(cfg Config) error {
 	if s == nil || s.path == "" {
 		return errors.New("配置存储未初始化")
 	}
+	cfg.Theme = normalizeTheme(cfg.Theme)
 	if err := os.MkdirAll(filepath.Dir(s.path), 0o755); err != nil {
 		return fmt.Errorf("创建配置目录失败: %w", err)
 	}

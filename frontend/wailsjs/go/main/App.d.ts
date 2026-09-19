@@ -16,4 +16,6 @@ export function SetCaptureLogs(arg1:boolean):Promise<main.AppState>;
 
 export function SetSilentStart(arg1:boolean):Promise<main.AppState>;
 
+export function SetTheme(arg1:string):Promise<main.AppState>;
+
 export function SilentStart():Promise<boolean>;
