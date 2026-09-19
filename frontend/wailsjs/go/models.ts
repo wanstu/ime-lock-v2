@@ -6,6 +6,7 @@ export namespace main {
 	    auto_start: boolean;
 	    silent_start: boolean;
 	    theme: string;
+	    theme_pack: string;
 	    capture_logs: boolean;
 	    fix_count: number;
 	    last_fix_at: string;
@@ -24,6 +25,7 @@ export namespace main {
 	        this.auto_start = source["auto_start"];
 	        this.silent_start = source["silent_start"];
 	        this.theme = source["theme"];
+	        this.theme_pack = source["theme_pack"];
 	        this.capture_logs = source["capture_logs"];
 	        this.fix_count = source["fix_count"];
 	        this.last_fix_at = source["last_fix_at"];

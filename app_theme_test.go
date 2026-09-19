@@ -58,6 +58,37 @@ func TestSetThemePersistsAndReturnsState(t *testing.T) {
 	}
 }
 
+func TestSetThemePackPersistsFutureRuntimeTheme(t *testing.T) {
+	app := newThemeTestApp(t)
+
+	state, err := app.SetThemePack("future-theme")
+	if err != nil {
+		t.Fatalf("SetThemePack() error = %v", err)
+	}
+	if state.ThemePack != "future-theme" {
+		t.Fatalf("state.ThemePack = %q, want %q", state.ThemePack, "future-theme")
+	}
+
+	saved, err := app.store.Load()
+	if err != nil {
+		t.Fatalf("Load() error = %v", err)
+	}
+	if saved.ThemePack != "future-theme" {
+		t.Fatalf("saved.ThemePack = %q, want %q", saved.ThemePack, "future-theme")
+	}
+}
+
+func TestSetThemePackRejectsUnsafeValueWithoutChangingConfig(t *testing.T) {
+	app := newThemeTestApp(t)
+
+	if _, err := app.SetThemePack("../evil"); err == nil {
+		t.Fatal("SetThemePack(../evil) expected error")
+	}
+	if app.config.ThemePack != defaultThemePack {
+		t.Fatalf("config.ThemePack = %q, want %q", app.config.ThemePack, defaultThemePack)
+	}
+}
+
 func TestSetThemeRejectsUnknownValueWithoutChangingConfig(t *testing.T) {
 	app := newThemeTestApp(t)
 

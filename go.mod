@@ -5,7 +5,7 @@ go 1.26
 require (
 	github.com/go-ole/go-ole v1.3.0
 	github.com/wailsapp/wails/v2 v2.15.0
-	github.com/wanstu/wails-desktop-kit v0.2.2
+	github.com/wanstu/wails-desktop-kit v0.5.0
 	golang.org/x/sys v0.47.0
 )
 

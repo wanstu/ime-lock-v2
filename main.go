@@ -63,6 +63,7 @@ func run() error {
 		Launch:         launch,
 		Window:         window,
 		Tray:           imeTrayConfig(app, trayIcon),
+		Theme:          desktopkit.DefaultThemeConfig(),
 		SingleInstance: true,
 		SecondInstance: handleSecondInstance,
 		Hooks: desktopkit.Hooks{

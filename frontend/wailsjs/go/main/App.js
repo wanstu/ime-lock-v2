@@ -34,6 +34,10 @@ export function SetTheme(arg1) {
   return window['go']['main']['App']['SetTheme'](arg1);
 }
 
+export function SetThemePack(arg1) {
+  return window['go']['main']['App']['SetThemePack'](arg1);
+}
+
 export function SilentStart() {
   return window['go']['main']['App']['SilentStart']();
 }

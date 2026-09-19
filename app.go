@@ -19,6 +19,7 @@ type AppState struct {
 	AutoStart   bool   `json:"auto_start"`
 	SilentStart bool   `json:"silent_start"`
 	Theme       string `json:"theme"`
+	ThemePack   string `json:"theme_pack"`
 	CaptureLogs bool   `json:"capture_logs"`
 	FixCount    uint64 `json:"fix_count"`
 	LastFixAt   string `json:"last_fix_at"`
@@ -143,6 +144,7 @@ func (a *App) GetState() (AppState, error) {
 		AutoStart:   a.config.AutoStart,
 		SilentStart: a.config.SilentStart,
 		Theme:       normalizeTheme(a.config.Theme),
+		ThemePack:   normalizeThemePack(a.config.ThemePack),
 		CaptureLogs: a.captureLogs,
 		FixCount:    a.fixCount,
 		LastFixAt:   lastFix,
@@ -201,6 +203,26 @@ func (a *App) SetTheme(theme string) (AppState, error) {
 		return AppState{}, err
 	}
 	a.appendLog(fmt.Sprintf("主题已切换为 %s", theme))
+	return a.GetState()
+}
+
+func (a *App) SetThemePack(pack string) (AppState, error) {
+	if err := a.ready(); err != nil {
+		return AppState{}, err
+	}
+	pack = strings.ToLower(strings.TrimSpace(pack))
+	if !validThemePack(pack) {
+		return AppState{}, fmt.Errorf("不支持的配色主题 ID %q", pack)
+	}
+	a.mu.Lock()
+	a.config.ThemePack = pack
+	cfg := a.config
+	a.mu.Unlock()
+	if err := a.store.Save(cfg); err != nil {
+		a.setError(err)
+		return AppState{}, err
+	}
+	a.appendLog(fmt.Sprintf("配色主题已切换为 %s", pack))
 	return a.GetState()
 }
 

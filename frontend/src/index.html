@@ -72,7 +72,7 @@
 
       <div class="setting-row dk-setting-row">
         <div>
-          <strong>主题</strong>
+          <strong>明暗模式</strong>
           <span>选择浅色、深色，或跟随 Windows 系统主题。</span>
         </div>
         <select id="theme" class="theme-select" aria-label="主题">
@@ -80,6 +80,17 @@
           <option value="dark">深色</option>
           <option value="system">跟随系统</option>
         </select>
+      </div>
+
+      <div class="setting-row dk-setting-row">
+        <div>
+          <strong>配色主题</strong>
+          <span id="theme-pack-description">由 Wails Desktop Kit Theme 提供。</span>
+        </div>
+        <div class="theme-pack-controls">
+          <select id="theme-pack" class="theme-select" aria-label="配色主题"></select>
+          <button id="refresh-theme-packs" class="dk-button dk-button-secondary theme-refresh" type="button">刷新</button>
+        </div>
       </div>
 
       <label class="setting-row dk-setting-row">

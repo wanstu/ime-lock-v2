@@ -8,7 +8,7 @@ import (
 
 func TestConfigStoreRoundTrip(t *testing.T) {
 	store := &ConfigStore{path: filepath.Join(t.TempDir(), "config.json")}
-	want := Config{AutoStart: true, SilentStart: true, Theme: themeDark}
+	want := Config{AutoStart: true, SilentStart: true, Theme: themeDark, ThemePack: "ocean"}
 	if err := store.Save(want); err != nil {
 		t.Fatalf("Save() error = %v", err)
 	}
@@ -20,7 +20,7 @@ func TestConfigStoreRoundTrip(t *testing.T) {
 		t.Fatalf("Load() = %+v, want %+v", got, want)
 	}
 
-	updated := Config{AutoStart: false, SilentStart: true, Theme: themeSystem}
+	updated := Config{AutoStart: false, SilentStart: true, Theme: themeSystem, ThemePack: "forest"}
 	if err := store.Save(updated); err != nil {
 		t.Fatalf("second Save() error = %v", err)
 	}
@@ -58,6 +58,9 @@ func TestConfigStoreLegacyConfigDefaultsThemeToLight(t *testing.T) {
 	if got.Theme != themeLight {
 		t.Fatalf("Theme = %q, want %q", got.Theme, themeLight)
 	}
+	if got.ThemePack != defaultThemePack {
+		t.Fatalf("ThemePack = %q, want %q", got.ThemePack, defaultThemePack)
+	}
 }
 
 func TestNormalizeTheme(t *testing.T) {
@@ -74,6 +77,24 @@ func TestNormalizeTheme(t *testing.T) {
 	for _, tt := range tests {
 		if got := normalizeTheme(tt.input); got != tt.want {
 			t.Fatalf("normalizeTheme(%q) = %q, want %q", tt.input, got, tt.want)
+		}
+	}
+}
+
+func TestNormalizeThemePack(t *testing.T) {
+	tests := []struct {
+		input string
+		want  string
+	}{
+		{input: "", want: defaultThemePack},
+		{input: " OCEAN ", want: "ocean"},
+		{input: "future-theme", want: "future-theme"},
+		{input: "../evil", want: defaultThemePack},
+		{input: "_invalid", want: defaultThemePack},
+	}
+	for _, tt := range tests {
+		if got := normalizeThemePack(tt.input); got != tt.want {
+			t.Fatalf("normalizeThemePack(%q) = %q, want %q", tt.input, got, tt.want)
 		}
 	}
 }

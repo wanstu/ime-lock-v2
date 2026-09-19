@@ -133,6 +133,17 @@ h2 { margin-bottom: 5px; }
   outline: none;
 }
 
+.theme-pack-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.theme-refresh {
+  min-width: auto;
+  padding-inline: 12px;
+}
+
 .log-heading { margin-bottom: 12px; }
 
 kbd {
