@@ -2,12 +2,19 @@ package main
 
 import (
 	"embed"
+	"fmt"
+	"io/fs"
 	"os"
 	"strings"
 
-	"github.com/wailsapp/wails/v2"
-	"github.com/wailsapp/wails/v2/pkg/options"
-	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
+	desktopkit "github.com/wanstu/wails-desktop-kit"
+	"github.com/wanstu/wails-desktop-kit/autostart"
+	kitui "github.com/wanstu/wails-desktop-kit/ui"
+)
+
+const (
+	desktopAppID = "com.wanstu.ime-lock-v2"
+	autoStartID  = "IME-Lock-V2"
 )
 
 //go:embed all:frontend/src
@@ -17,45 +24,52 @@ var assets embed.FS
 var trayIcon []byte
 
 func main() {
-	releaseInstance, primary, err := acquireSingleInstance()
+	if err := run(); err != nil {
+		fmt.Fprintln(os.Stderr, "Error:", err)
+	}
+}
+
+func run() error {
+	appAssets, err := fs.Sub(assets, "frontend/src")
 	if err != nil {
-		println("Error:", err.Error())
-		return
+		return fmt.Errorf("加载前端资源失败: %w", err)
 	}
-	if !primary {
-		if !launchedFromAutoStart() {
-			_ = requestExistingInstanceWindow()
-		}
-		return
-	}
-	defer releaseInstance()
-	_ = prepareSingleInstanceWake()
 
-	app := NewApp()
-	app.attachTray(trayIcon)
-
-	err = wails.Run(&options.App{
-		Title:             "IME Lock v2",
-		Width:             760,
-		Height:            680,
-		MinWidth:          680,
-		MinHeight:         560,
-		StartHidden:       launchedFromAutoStart() && app.SilentStart(),
-		HideWindowOnClose: true,
-		AssetServer: &assetserver.Options{
-			Assets: assets,
-		},
-		BackgroundColour: &options.RGBA{R: 244, G: 247, B: 251, A: 1},
-		OnStartup:        app.startup,
-		OnDomReady:       app.domReady,
-		OnShutdown:       app.shutdown,
-		Bind: []interface{}{
-			app,
-		},
+	login, err := autostart.New(autostart.Config{
+		ID:          autoStartID,
+		DisplayName: "IME Lock v2",
+		Comment:     "Windows 输入法状态守护",
+		Arguments:   []string{"--autostart"},
 	})
 	if err != nil {
-		println("Error:", err.Error())
+		return err
 	}
+
+	app := NewApp(login)
+	launch := desktopkit.LaunchOptions{AutoStart: launchedFromAutoStart()}
+	window := desktopkit.DefaultWindowConfig()
+	window.Width = 760
+	window.Height = 680
+	window.MinWidth = 680
+	window.MinHeight = 560
+	window.StartHiddenOnAutoStart = app.SilentStart()
+	window.Background = desktopkit.Color{R: 244, G: 247, B: 251, A: 1}
+
+	return desktopkit.Run(desktopkit.Config{
+		ID:             desktopAppID,
+		Title:          "IME Lock v2",
+		Assets:         kitui.Mount(appAssets),
+		Bind:           []interface{}{app},
+		Launch:         launch,
+		Window:         window,
+		Tray:           imeTrayConfig(app, trayIcon),
+		SingleInstance: true,
+		SecondInstance: handleSecondInstance,
+		Hooks: desktopkit.Hooks{
+			Startup:  app.startup,
+			Shutdown: app.shutdown,
+		},
+	})
 }
 
 func launchedFromAutoStart() bool {

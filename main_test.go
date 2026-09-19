@@ -22,3 +22,24 @@ func TestHasAutoStartArg(t *testing.T) {
 		})
 	}
 }
+
+func TestShouldShowExistingWindow(t *testing.T) {
+	tests := []struct {
+		name string
+		args []string
+		want bool
+	}{
+		{name: "manual duplicate", args: nil, want: true},
+		{name: "manual duplicate with unrelated arg", args: []string{"--debug"}, want: true},
+		{name: "autostart duplicate", args: []string{"--autostart"}, want: false},
+		{name: "legacy minimized duplicate", args: []string{"--minimized"}, want: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := shouldShowExistingWindow(tt.args); got != tt.want {
+				t.Fatalf("shouldShowExistingWindow(%v) = %v, want %v", tt.args, got, tt.want)
+			}
+		})
+	}
+}

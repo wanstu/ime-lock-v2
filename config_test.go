@@ -8,7 +8,7 @@ import (
 
 func TestConfigStoreRoundTrip(t *testing.T) {
 	store := &ConfigStore{path: filepath.Join(t.TempDir(), "config.json")}
-	want := Config{AutoStart: true, SilentStart: true}
+	want := Config{AutoStart: true, SilentStart: true, Theme: themeDark}
 	if err := store.Save(want); err != nil {
 		t.Fatalf("Save() error = %v", err)
 	}
@@ -20,7 +20,7 @@ func TestConfigStoreRoundTrip(t *testing.T) {
 		t.Fatalf("Load() = %+v, want %+v", got, want)
 	}
 
-	updated := Config{AutoStart: false, SilentStart: true}
+	updated := Config{AutoStart: false, SilentStart: true, Theme: themeSystem}
 	if err := store.Save(updated); err != nil {
 		t.Fatalf("second Save() error = %v", err)
 	}
@@ -39,8 +39,42 @@ func TestConfigStoreMissingFileUsesDefaults(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Load() error = %v", err)
 	}
-	if got != (Config{}) {
-		t.Fatalf("Load() = %+v, want zero config", got)
+	want := defaultConfig()
+	if got != want {
+		t.Fatalf("Load() = %+v, want %+v", got, want)
+	}
+}
+
+func TestConfigStoreLegacyConfigDefaultsThemeToLight(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "config.json")
+	if err := os.WriteFile(path, []byte("{\"auto_start\":true,\"silent_start\":true}\n"), 0o600); err != nil {
+		t.Fatalf("WriteFile() error = %v", err)
+	}
+	store := &ConfigStore{path: path}
+	got, err := store.Load()
+	if err != nil {
+		t.Fatalf("Load() error = %v", err)
+	}
+	if got.Theme != themeLight {
+		t.Fatalf("Theme = %q, want %q", got.Theme, themeLight)
+	}
+}
+
+func TestNormalizeTheme(t *testing.T) {
+	tests := []struct {
+		input string
+		want  string
+	}{
+		{input: "", want: themeLight},
+		{input: "LIGHT", want: themeLight},
+		{input: " dark ", want: themeDark},
+		{input: "system", want: themeSystem},
+		{input: "unknown", want: themeLight},
+	}
+	for _, tt := range tests {
+		if got := normalizeTheme(tt.input); got != tt.want {
+			t.Fatalf("normalizeTheme(%q) = %q, want %q", tt.input, got, tt.want)
+		}
 	}
 }
 
